@@ -1,7 +1,7 @@
 # AzuDl - GC2GD
 
 <p align="center">
-  <a href="README.fa.md">فارسی</a> · <strong>English</strong>
+  <a href="AzuDl-GC2GD-v1.2.0-README.fa.md">فارسی</a> · <strong>English</strong>
 </p>
 
 <p align="center">
@@ -9,200 +9,268 @@
 </p>
 
 <p align="center">
-  A clean, practical, and powerful downloader for Google Colab that saves files directly to Google Drive.
+  A powerful Google Colab downloader and file utility toolkit that saves downloads directly to Google Drive.
 </p>
 
 <p align="center">
-  <code>Google Colab</code> · <code>Google Drive</code> · <code>aria2</code> · <code>yt-dlp</code> · <code>Python</code>
+  <code>Google Colab</code> · <code>Google Drive</code> · <code>aria2</code> · <code>yt-dlp</code> · <code>FFmpeg</code> · <code>Python</code>
 </p>
 
 ---
 
-## Table of Contents
+## Overview
 
-- [What is AzuDl - GC2GD?](#what-is-azudl---gc2gd)
-- [For Everyone](#for-everyone)
-- [For Developers](#for-developers)
-- [Features](#features)
-- [Supported Download Types](#supported-download-types)
-- [Storage Structure](#storage-structure)
-- [How to Use](#how-to-use)
-- [Menu Guide](#menu-guide)
-- [YouTube Quality Guide](#youtube-quality-guide)
-- [Speed Limit Guide](#speed-limit-guide)
-- [Download History](#download-history)
-- [Technical Architecture](#technical-architecture)
-- [Dependencies](#dependencies)
-- [Troubleshooting](#troubleshooting)
-- [Legal and Responsible Use](#legal-and-responsible-use)
-- [Developer](#developer)
-
----
-
-## What is AzuDl - GC2GD?
-
-**AzuDl - GC2GD** is a Python-based downloader designed for **Google Colab**.  
-It downloads files using Colab's runtime and saves them directly into your **Google Drive**.
-
-The name means:
+**AzuDl - GC2GD** stands for:
 
 > **Azizi Universal Downloader - Google Colab to Google Drive**
 
-It supports multiple download types:
+It is a Google Colab-based downloader that saves supported downloads directly into Google Drive.
 
-- Torrent magnet links
-- YouTube videos and playlists
-- Direct download links
-- Batch downloads
-- Automatic link detection
+Version **1.2.0** improves the original downloader with better torrent handling, `.torrent` file support, direct-link headers, YouTube metadata options, storage reports, SHA256 hashing, ZIP tools, and aria2 management utilities.
 
 ---
 
-## For Everyone
+## For Regular Users
 
-Imagine you want to download a file, a YouTube video, a playlist, or a torrent magnet, but you do not want to keep your own computer running.
+AzuDl is useful when you want to download supported files without keeping your personal computer running.
 
-AzuDl - GC2GD lets you:
+You open Google Colab, run the code, connect Google Drive, paste a supported link, and the final file is saved into your Drive.
 
-1. Open Google Colab
-2. Paste the code
-3. Connect your Google Drive
-4. Paste a link
-5. Wait for the progress bar
-6. Find the downloaded file inside your Drive
+You can use it for:
 
-You do not need to install anything on your personal computer.  
-Everything runs in the browser using Google Colab.
-
-### Simple Example
-
-You choose:
-
-```text
-1. Auto detect link
-```
-
-Then paste:
-
-```text
-https://example.com/file.zip
-```
-
-The program detects that it is a direct link and downloads it to Google Drive.
-
-For YouTube, you can choose quality such as:
-
-```text
-1080
-720
-best
-```
-
-For torrent magnet links, you can paste a magnet link and the program will download it using `aria2`.
+- Direct file links
+- YouTube videos
+- YouTube playlists
+- YouTube audio extraction as MP3
+- Magnet torrents
+- `.torrent` files
+- Batch downloads
+- ZIP creation
+- File integrity checking with SHA256
 
 ---
 
 ## For Developers
 
-AzuDl - GC2GD is built around a single Python class:
+The project is built around one Python class:
 
 ```python
 class AzuDlGC2GD:
 ```
 
-The class manages:
+It manages:
 
 - Google Drive mounting
-- Folder creation
-- aria2 RPC server startup
-- JSON-RPC calls to aria2
-- Torrent magnet handling
-- Direct link downloads
+- Project folder creation
+- aria2 RPC startup
+- JSON-RPC communication with aria2
+- Magnet metadata detection
+- Real torrent GID resolution after metadata
+- `.torrent` loading through `aria2.addTorrent`
+- Direct URL downloads through aria2
 - YouTube downloads through `yt-dlp`
-- Progress bars through `tqdm`
-- Download history logging
-- Auto detection of link types
-- Batch processing
-
-The architecture is intentionally simple, portable, and Colab-friendly.
+- Progress bars through `tqdm.notebook`
+- Download history
+- Storage reports
+- SHA256 hashing
+- ZIP archive creation
+- aria2 task management
 
 ---
 
 ## Features
 
-### Core Features
+### Download Features
 
-- Google Drive integration
-- Auto link detection
-- Torrent magnet downloads
-- Direct URL downloads
+- Magnet torrent downloads
+- Real torrent progress after metadata fetching
+- `.torrent` file download from URL or local path
+- Direct link downloads
+- Optional HTTP headers for direct links
 - YouTube video downloads
 - YouTube playlist downloads
-- YouTube audio-only MP3 downloads
-- Quality selection
+- YouTube audio-only MP3 extraction
+- YouTube quality selection
 - Custom YouTube format ID support
+- Optional YouTube metadata and thumbnail saving
 - Batch download mode
-- Download history
-- File listing
-- Developer information panel
-- Help menu
-- Real-time progress bars
-- Speed limit support
-- Safe folder and file naming
-- Resume support for interrupted downloads
+- Speed limit support for aria2 downloads
+- Resume support
 
-### Interface Features
+### File Utility Features
 
-The app provides a simple terminal-style menu:
+- List downloaded files
+- Show latest downloaded file
+- Google Drive storage report
+- Project folder size report
+- SHA256 hash for latest file
+- SHA256 hash for selected file
+- ZIP any folder
+- ZIP latest downloaded folder
+- Download history log
+
+### aria2 Management Features
+
+- Show active, waiting, and stopped aria2 tasks
+- Remove aria2 GID
+- Clear stopped aria2 results
+- Better torrent status display
+- Better progress details with speed, percentage, connections, and seeders
+
+---
+
+## Menu
 
 ```text
 1. Auto detect link
 2. Torrent magnet
-3. YouTube video or playlist
-4. Direct link
-5. Batch download
-6. Download history
-7. List downloaded files
-8. Developer
-9. Help
-10. Exit
+3. Torrent file
+4. YouTube video or playlist
+5. Direct link
+6. Batch download
+7. Download history
+8. List downloaded files
+9. Storage report
+10. SHA256 latest file
+11. SHA256 selected file
+12. ZIP folder
+13. ZIP latest folder
+14. aria2 status
+15. Remove aria2 GID
+16. Clear stopped aria2 results
+17. Latest file
+18. Developer
+19. Help
+20. Exit
 ```
 
 ---
 
-## Supported Download Types
+## Storage Structure
 
-### 1. Torrent Magnet
-
-Supported format:
+AzuDl creates this directory:
 
 ```text
-magnet:?xt=urn:btih:...
+/content/drive/MyDrive/AzuDl-GC2GD
 ```
 
-Torrent downloads are handled through `aria2c` using RPC mode.
+Folder layout:
 
-The program enables:
+```text
+AzuDl-GC2GD/
+├── TorrentDownloads/
+├── YouTubeDownloads/
+├── DirectDownloads/
+├── BatchDownloads/
+├── Archives/
+└── Logs/
+    └── download_history.json
+```
 
-- DHT
-- DHT6
-- Peer exchange
-- Local peer discovery
-- Metadata saving
-- Resume support
-- Zero seed time after completion
+| Folder | Purpose |
+|---|---|
+| `TorrentDownloads` | Magnet and `.torrent` downloads |
+| `YouTubeDownloads` | YouTube video, playlist, audio, metadata, and thumbnail outputs |
+| `DirectDownloads` | Direct URL downloads |
+| `BatchDownloads` | Grouped batch downloads |
+| `Archives` | ZIP archives created by the tool |
+| `Logs` | Download history and logs |
 
-### 2. YouTube
+---
 
-Supported YouTube sources include:
+## Torrent Improvements in v1.2.0
 
-- Single videos
-- Playlists
-- Standard YouTube links
-- Short `youtu.be` links
-- Music YouTube links
+Magnet links work in stages:
 
-Examples:
+```text
+Magnet link
+  ↓
+Metadata download
+  ↓
+Real torrent task
+  ↓
+Actual file download
+```
+
+Older versions could show only the metadata download, such as:
+
+```text
+Torrent: 100% 5.77k/5.77k
+```
+
+That was not the real file download. It was only the torrent metadata.
+
+Version **1.2.0** detects the real torrent `GID` after metadata is fetched and monitors the actual file download.
+
+Expected output:
+
+```text
+Magnet added
+Metadata GID: ...
+Fetching metadata: 100%
+Metadata completed
+Real torrent GID: ...
+Starting torrent download monitor
+Torrent Download: ...
+```
+
+---
+
+## Torrent Magnet Usage
+
+Choose:
+
+```text
+2. Torrent magnet
+```
+
+Then paste:
+
+```text
+magnet:?xt=urn:btih:EXAMPLE_HASH
+```
+
+Optional speed limit examples:
+
+```text
+500K
+2M
+10M
+```
+
+---
+
+## Torrent File Usage
+
+Choose:
+
+```text
+3. Torrent file
+```
+
+You can enter a `.torrent` URL:
+
+```text
+https://example.com/file.torrent
+```
+
+or a local Colab/Drive path:
+
+```text
+/content/drive/MyDrive/file.torrent
+```
+
+---
+
+## YouTube Usage
+
+Choose:
+
+```text
+4. YouTube video or playlist
+```
+
+Supported examples:
 
 ```text
 https://www.youtube.com/watch?v=VIDEO_ID
@@ -211,162 +279,7 @@ https://www.youtube.com/playlist?list=PLAYLIST_ID
 https://music.youtube.com/watch?v=VIDEO_ID
 ```
 
-### 3. Direct Links
-
-Supported protocols:
-
-```text
-http://
-https://
-ftp://
-```
-
-Examples:
-
-```text
-https://example.com/file.zip
-https://example.com/video.mp4
-https://example.com/archive.rar
-https://example.com/document.pdf
-```
-
-### 4. Batch Mode
-
-Batch mode lets you paste multiple links one by one.
-
-Supported in batch mode:
-
-- Torrent magnet links
-- YouTube links
-- Direct links
-
----
-
-## Storage Structure
-
-AzuDl - GC2GD creates this folder in your Google Drive:
-
-```text
-/content/drive/MyDrive/AzuDl-GC2GD
-```
-
-Inside it:
-
-```text
-AzuDl-GC2GD/
-├── TorrentDownloads/
-├── YouTubeDownloads/
-├── DirectDownloads/
-├── BatchDownloads/
-└── Logs/
-    └── download_history.json
-```
-
-### Folder Purpose
-
-| Folder | Purpose |
-|---|---|
-| `TorrentDownloads` | Stores torrent magnet downloads |
-| `YouTubeDownloads` | Stores YouTube videos, playlists, and audio |
-| `DirectDownloads` | Stores direct URL downloads |
-| `BatchDownloads` | Used for grouped batch operations |
-| `Logs` | Stores download history |
-
----
-
-## How to Use
-
-### Step 1: Open Google Colab
-
-Go to Google Colab and create a new notebook.
-
-### Step 2: Paste the Code
-
-Paste the full AzuDl - GC2GD source code into a cell.
-
-### Step 3: Run the Cell
-
-Run the cell. The program will install required packages:
-
-```text
-aria2
-ffmpeg
-tqdm
-requests
-yt-dlp
-```
-
-### Step 4: Mount Google Drive
-
-Google Colab will ask for permission to connect to your Google Drive.
-
-### Step 5: Choose an Option
-
-Use the menu to select what you want to do.
-
----
-
-## Menu Guide
-
-### 1. Auto detect link
-
-Best option for most users.
-
-Paste any supported link and the program detects the type automatically.
-
-Supported detection:
-
-| Link Type | Detected As |
-|---|---|
-| `magnet:?...` | Torrent |
-| `youtube.com` | YouTube |
-| `youtu.be` | YouTube |
-| `music.youtube.com` | YouTube |
-| `http://...` | Direct |
-| `https://...` | Direct |
-| `ftp://...` | Direct |
-
-### 2. Torrent magnet
-
-Use this when you specifically want to download a torrent magnet link.
-
-### 3. YouTube video or playlist
-
-Use this for YouTube videos, playlists, or audio extraction.
-
-### 4. Direct link
-
-Use this for normal file URLs.
-
-### 5. Batch download
-
-Use this when you have multiple links.
-
-### 6. Download history
-
-Shows recent download records.
-
-### 7. List downloaded files
-
-Lists files saved inside project folders.
-
-### 8. Developer
-
-Shows project and developer links.
-
-### 9. Help
-
-Shows built-in help.
-
-### 10. Exit
-
-Closes the program loop.
-
----
-
-## YouTube Quality Guide
-
-Available quality presets:
+Quality presets:
 
 ```text
 best
@@ -379,37 +292,7 @@ best
 360
 ```
 
-### Recommended Choices
-
-| Choice | Meaning |
-|---|---|
-| `best` | Best available quality |
-| `1080` | Full HD or lower |
-| `720` | HD or lower |
-| `480` | Lower file size |
-| `360` | Smaller downloads |
-
-### Audio Only
-
-When asked:
-
-```text
-Audio only? y/n:
-```
-
-Enter:
-
-```text
-y
-```
-
-The program saves audio as MP3 using FFmpeg.
-
-### Custom Format ID
-
-You can list available formats and enter custom IDs.
-
-Examples:
+Custom format examples:
 
 ```text
 137+140
@@ -419,52 +302,158 @@ Examples:
 best
 ```
 
-This is useful when you want exact control over video and audio streams.
+Audio-only mode saves MP3 output. Metadata mode can save `.info.json` and thumbnails.
 
 ---
 
-## Speed Limit Guide
+## Direct Link Usage
 
-Speed limit is optional.
-
-Examples:
+Choose:
 
 ```text
-500K
-2M
-10M
+5. Direct link
 ```
 
-Meaning:
+Supported protocols:
 
-| Value | Meaning |
-|---|---|
-| `500K` | 500 KB/s |
-| `2M` | 2 MB/s |
-| `10M` | 10 MB/s |
-| empty | unlimited |
+```text
+http://
+https://
+ftp://
+```
 
-Speed limits are mainly used by aria2 for torrent and direct downloads.
+Optional fields:
+
+```text
+Folder name
+File name
+Speed limit
+Headers JSON
+```
+
+Header example:
+
+```json
+{"User-Agent":"Mozilla/5.0","Referer":"https://example.com"}
+```
+
+---
+
+## Batch Download
+
+Choose:
+
+```text
+6. Batch download
+```
+
+Paste links one by one. Submit an empty line to start.
+
+Batch mode supports:
+
+- Magnet links
+- `.torrent` URLs
+- YouTube links
+- Direct links
+
+---
+
+## Storage Report
+
+Choose:
+
+```text
+9. Storage report
+```
+
+It shows:
+
+- Total mounted storage
+- Used storage
+- Free storage
+- Size of each AzuDl project folder
+
+---
+
+## SHA256
+
+Choose:
+
+```text
+10. SHA256 latest file
+```
+
+or:
+
+```text
+11. SHA256 selected file
+```
+
+SHA256 helps verify file integrity after download.
+
+---
+
+## ZIP Tools
+
+Choose:
+
+```text
+12. ZIP folder
+```
+
+to zip a folder by path.
+
+Choose:
+
+```text
+13. ZIP latest folder
+```
+
+to zip the most recently modified downloaded folder.
+
+ZIP files are saved in:
+
+```text
+/content/drive/MyDrive/AzuDl-GC2GD/Archives
+```
+
+---
+
+## aria2 Tools
+
+Choose:
+
+```text
+14. aria2 status
+```
+
+to view active, waiting, and stopped aria2 tasks.
+
+Choose:
+
+```text
+15. Remove aria2 GID
+```
+
+to remove a task by GID.
+
+Choose:
+
+```text
+16. Clear stopped aria2 results
+```
+
+to clean old stopped results from aria2.
 
 ---
 
 ## Download History
 
-Download history is stored in:
+History is saved at:
 
 ```text
 /content/drive/MyDrive/AzuDl-GC2GD/Logs/download_history.json
 ```
-
-Each record can include:
-
-- Type
-- Source URL
-- Output path
-- Time
-- Status
-- Format
-- Error message if failed
 
 Example:
 
@@ -472,7 +461,7 @@ Example:
 {
   "type": "youtube",
   "source": "https://www.youtube.com/watch?v=VIDEO_ID",
-  "output": "/content/drive/MyDrive/AzuDl-GC2GD/YouTubeDownloads/MyFolder",
+  "output": "/content/drive/MyDrive/AzuDl-GC2GD/YouTubeDownloads/Example",
   "format": "bv*+ba/best",
   "status": "completed",
   "time": "2026-05-06 18:30:00"
@@ -481,121 +470,69 @@ Example:
 
 ---
 
-## Technical Architecture
+## Installation
 
-### Main Components
+Paste the full source code into a Google Colab cell and run it.
 
-```text
-AzuDlGC2GD
-├── setup
-├── aria2 RPC control
-├── link detection
-├── torrent downloader
-├── direct downloader
-├── YouTube downloader
-├── batch manager
-├── history manager
-├── file lister
-├── help panel
-└── developer panel
-```
-
-### aria2 RPC
-
-Torrent and direct downloads use `aria2c` in daemon RPC mode:
-
-```text
-http://localhost:6800/jsonrpc
-```
-
-The app sends JSON-RPC requests to aria2.
-
-Important methods:
-
-```text
-aria2.addUri
-aria2.tellStatus
-```
-
-### yt-dlp
-
-YouTube downloads are handled by `yt-dlp`.
-
-The app uses:
-
-- Format selection
-- Playlist support
-- Audio extraction
-- FFmpeg post-processing
-- Download hooks for progress bars
-
-### tqdm
-
-Progress bars are displayed with:
-
-```python
-tqdm.notebook
-```
-
-This makes it suitable for Google Colab notebooks.
-
----
-
-## Dependencies
-
-System packages:
+The code installs:
 
 ```text
 aria2
 ffmpeg
-```
-
-Python packages:
-
-```text
+p7zip-full
 tqdm
 requests
 yt-dlp
-```
-
-Install command used in Colab:
-
-```python
-!apt update -qq
-!apt install -y aria2 ffmpeg
-!pip install -q tqdm requests yt-dlp
 ```
 
 ---
 
 ## Troubleshooting
 
-### Google Drive does not mount
+### Google Drive mount failed
 
-Run the cell again and approve Drive access.
+Try:
 
-### Torrent does not start
+```text
+Runtime > Restart session
+```
+
+or run:
+
+```python
+from google.colab import drive
+drive.flush_and_unmount()
+```
+
+Then restart the runtime.
+
+Other fixes:
+
+- Use only one Google account in the browser
+- Open Colab in Incognito mode
+- Allow third-party cookies
+- Reconnect Google Drive manually from the Colab file panel
+
+### Torrent metadata downloads but real file does not start
 
 Possible reasons:
 
 - No seeders
-- Weak magnet link
-- Blocked peers
-- Metadata unavailable
+- Weak torrent
+- Metadata found but no peers available
+- Network restrictions
 
-Try another magnet link or wait longer.
+Use:
+
+```text
+14. aria2 status
+```
+
+to inspect active, waiting, and stopped tasks.
 
 ### YouTube download fails
 
-Possible reasons:
-
-- Video is private
-- Region restriction
-- Age restriction
-- Login required
-- yt-dlp needs an update
-
-Try updating:
+Try updating yt-dlp:
 
 ```python
 !pip install -U yt-dlp
@@ -605,34 +542,30 @@ Try updating:
 
 Possible reasons:
 
-- Link expired
+- Expired link
+- Missing headers
 - Server blocks Colab
 - Authentication required
-- Cookies required
 - Temporary token expired
 
-### Progress bar does not show total size
-
-Some servers do not provide file size.  
-The download may still work.
+Try using custom headers JSON.
 
 ---
 
-## Legal and Responsible Use
+## Responsible Use
 
-AzuDl - GC2GD is a downloader tool.  
-Use it only for content you have the right to download and store.
+AzuDl is a downloader and file utility tool. Use it only for files and content you have permission to download, store, or process.
 
-Responsible examples:
+Appropriate uses include:
 
 - Your own files
+- Open-source releases
 - Public domain content
 - Creative Commons content
-- Open-source releases
 - Backups of your own data
 - Files shared with permission
 
-Do not use this tool to download or distribute copyrighted content without permission.
+Do not use this tool to violate copyright, bypass access controls, or download unauthorized content.
 
 ---
 
@@ -652,9 +585,8 @@ Do not use this tool to download or distribute copyrighted content without permi
 
 ---
 
-## Final Note
+## Version
 
-AzuDl - GC2GD is designed to be simple enough for normal users and flexible enough for developers.
-
-Use Auto Detect for the easiest workflow.  
-Use custom YouTube formats, batch mode, and history features when you need more control.
+```text
+Current version: 1.2.0
+```
