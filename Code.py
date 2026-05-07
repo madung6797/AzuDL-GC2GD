@@ -1,5 +1,5 @@
 !apt update -qq
-!apt install -y aria2 ffmpeg
+!apt install -y aria2 ffmpeg p7zip-full
 !pip install -q tqdm requests yt-dlp
 
 import os
@@ -7,6 +7,9 @@ import re
 import json
 import time
 import socket
+import base64
+import shutil
+import hashlib
 import subprocess
 from pathlib import Path
 from datetime import datetime
@@ -22,7 +25,7 @@ class AzuDlGC2GD:
     def __init__(self):
         self.project_name = "AzuDl - GC2GD"
         self.project_subtitle = "Azizi Universal Downloader - Google Colab to Google Drive"
-        self.version = "1.0.1"
+        self.version = "1.2.0"
 
         self.drive_mount_path = Path("/content/drive")
         self.my_drive_path = self.drive_mount_path / "MyDrive"
@@ -32,6 +35,7 @@ class AzuDlGC2GD:
         self.youtube_dir = self.base_dir / "YouTubeDownloads"
         self.direct_dir = self.base_dir / "DirectDownloads"
         self.batch_dir = self.base_dir / "BatchDownloads"
+        self.archive_dir = self.base_dir / "Archives"
         self.logs_dir = self.base_dir / "Logs"
         self.history_file = self.logs_dir / "download_history.json"
 
@@ -101,6 +105,7 @@ class AzuDlGC2GD:
             self.youtube_dir,
             self.direct_dir,
             self.batch_dir,
+            self.archive_dir,
             self.logs_dir
         ]
 
@@ -184,7 +189,7 @@ class AzuDlGC2GD:
         return f"{value:.2f} PB"
 
     def detect_link_type(self, value):
-        value = value.strip()
+        value = str(value or "").strip()
         lower = value.lower()
 
         if lower.startswith("magnet:?"):
@@ -192,6 +197,7 @@ class AzuDlGC2GD:
 
         parsed = urlparse(value)
         host = parsed.netloc.lower()
+        path = parsed.path.lower()
 
         youtube_hosts = [
             "youtube.com",
@@ -204,8 +210,14 @@ class AzuDlGC2GD:
         if any(host == item or host.endswith("." + item) for item in youtube_hosts):
             return "youtube"
 
+        if path.endswith(".torrent"):
+            return "torrent_file"
+
         if lower.startswith(("http://", "https://", "ftp://")):
             return "direct"
+
+        if Path(value).suffix.lower() == ".torrent":
+            return "torrent_file"
 
         return "unknown"
 
@@ -253,12 +265,61 @@ class AzuDlGC2GD:
             if item.get("error"):
                 print("Error:", item.get("error"))
 
+    def get_all_downloaded_files(self):
+        folders = [
+            self.torrent_dir,
+            self.youtube_dir,
+            self.direct_dir,
+            self.batch_dir,
+            self.archive_dir
+        ]
+
+        files = []
+
+        for folder in folders:
+            if folder.exists():
+                files.extend([item for item in folder.glob("**/*") if item.is_file()])
+
+        return sorted(files, key=lambda x: x.stat().st_mtime, reverse=True)
+
+    def get_latest_file(self):
+        files = self.get_all_downloaded_files()
+
+        if not files:
+            return None
+
+        return files[0]
+
+    def get_latest_downloaded_file(self):
+        return self.get_latest_file()
+
+    def get_latest_downloaded_folder(self):
+        folders = [
+            self.torrent_dir,
+            self.youtube_dir,
+            self.direct_dir,
+            self.batch_dir,
+            self.archive_dir
+        ]
+
+        all_dirs = []
+
+        for folder in folders:
+            if folder.exists():
+                all_dirs.extend([item for item in folder.glob("**/*") if item.is_dir()])
+
+        if not all_dirs:
+            return None
+
+        return max(all_dirs, key=lambda item: item.stat().st_mtime)
+
     def list_downloads(self):
         folders = [
             self.torrent_dir,
             self.youtube_dir,
             self.direct_dir,
-            self.batch_dir
+            self.batch_dir,
+            self.archive_dir
         ]
 
         for folder in folders:
@@ -286,6 +347,43 @@ class AzuDlGC2GD:
                 size = self.format_bytes(item.stat().st_size)
                 print(f"{size:<12} {item}")
 
+    def print_latest_file(self):
+        latest = self.get_latest_downloaded_file()
+
+        if not latest:
+            print("No files found")
+            return
+
+        print("Latest file")
+        print("-" * 80)
+        print("Path:", latest)
+        print("Size:", self.format_bytes(latest.stat().st_size))
+        print("Modified:", datetime.fromtimestamp(latest.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"))
+
+    def select_file(self):
+        files = self.get_all_downloaded_files()
+
+        if not files:
+            print("No files found")
+            return None
+
+        for index, item in enumerate(files[:100], 1):
+            print(f"{index:<4} {self.format_bytes(item.stat().st_size):<12} {item}")
+
+        value = input("File number: ").strip()
+
+        if not value.isdigit():
+            print("Invalid number")
+            return None
+
+        index = int(value)
+
+        if index < 1 or index > min(len(files), 100):
+            print("Invalid number")
+            return None
+
+        return files[index - 1]
+
     def add_aria2_download(self, uris, save_dir, speed_limit="", extra_options=None):
         options = {
             "dir": str(save_dir),
@@ -310,6 +408,34 @@ class AzuDlGC2GD:
 
         return self.rpc("aria2.addUri", [uris, options])
 
+    def add_aria2_torrent(self, torrent_bytes, save_dir, speed_limit="", extra_options=None):
+        torrent_base64 = base64.b64encode(torrent_bytes).decode("utf-8")
+
+        options = {
+            "dir": str(save_dir),
+            "file-allocation": "none",
+            "continue": "true",
+            "max-tries": "0",
+            "retry-wait": "10",
+            "timeout": "60",
+            "connect-timeout": "60",
+            "allow-overwrite": "false",
+            "auto-file-renaming": "true",
+            "seed-time": "0",
+            "enable-dht": "true",
+            "enable-dht6": "true",
+            "enable-peer-exchange": "true",
+            "bt-enable-lpd": "true"
+        }
+
+        if speed_limit:
+            options["max-overall-download-limit"] = speed_limit.strip()
+
+        if extra_options:
+            options.update(extra_options)
+
+        return self.rpc("aria2.addTorrent", [torrent_base64, [], options])
+
     def get_aria2_status(self, gid):
         keys = [
             "gid",
@@ -323,10 +449,175 @@ class AzuDlGC2GD:
             "errorCode",
             "errorMessage",
             "files",
-            "bittorrent"
+            "bittorrent",
+            "followedBy",
+            "following",
+            "belongsTo"
         ]
 
         return self.rpc("aria2.tellStatus", [gid, keys])
+
+    def get_aria2_items(self):
+        keys = [
+            "gid",
+            "status",
+            "totalLength",
+            "completedLength",
+            "downloadSpeed",
+            "connections",
+            "numSeeders",
+            "errorCode",
+            "errorMessage",
+            "files",
+            "bittorrent",
+            "followedBy",
+            "following",
+            "belongsTo"
+        ]
+
+        active = self.rpc("aria2.tellActive", [keys])
+        waiting = self.rpc("aria2.tellWaiting", [0, 100, keys])
+        stopped = self.rpc("aria2.tellStopped", [0, 100, keys])
+
+        return active, waiting, stopped
+
+    def get_active_waiting_stopped(self):
+        return self.get_aria2_items()
+
+    def print_aria2_status(self):
+        active, waiting, stopped = self.get_aria2_items()
+
+        groups = [
+            ("Active", active),
+            ("Waiting", waiting),
+            ("Stopped", stopped)
+        ]
+
+        for title, items in groups:
+            print("")
+            print(title)
+            print("-" * 80)
+
+            if not items:
+                print("No items")
+                continue
+
+            for item in items:
+                gid = item.get("gid", "")
+                status = item.get("status", "")
+                total = int(item.get("totalLength", "0") or 0)
+                completed = int(item.get("completedLength", "0") or 0)
+                speed = int(item.get("downloadSpeed", "0") or 0)
+                connections = item.get("connections", "0")
+                seeders = item.get("numSeeders", "0")
+
+                percent = 0
+                if total > 0:
+                    percent = completed * 100 / total
+
+                files = item.get("files", [])
+                name = ""
+
+                if files:
+                    name = Path(files[0].get("path", "")).name
+
+                print("GID:", gid)
+                print("Status:", status)
+                print("Name:", name or "unknown")
+                print("Progress:", f"{percent:.2f}%")
+                print("Completed:", self.format_bytes(completed), "/", self.format_bytes(total))
+                print("Speed:", self.format_bytes(speed) + "/s")
+                print("Connections:", connections)
+                print("Seeders:", seeders)
+
+                if item.get("errorMessage"):
+                    print("Error:", item.get("errorMessage"))
+
+                print("-" * 80)
+
+    def purge_aria2_stopped(self):
+        try:
+            result = self.rpc("aria2.purgeDownloadResult")
+            print("Stopped download results cleared")
+            print(result)
+        except Exception as error:
+            print("Failed to purge stopped downloads:", error)
+
+    def remove_aria2_gid(self):
+        gid = input("GID to remove: ").strip()
+
+        if not gid:
+            print("No GID entered")
+            return
+
+        try:
+            result = self.rpc("aria2.remove", [gid])
+            print("Removed active/waiting download:", result)
+            return
+        except Exception:
+            pass
+
+        try:
+            result = self.rpc("aria2.removeDownloadResult", [gid])
+            print("Removed stopped download result:", result)
+        except Exception as error:
+            print("Failed to remove GID:", error)
+
+    def find_real_torrent_gid(self, metadata_gid, save_dir):
+        save_dir = str(save_dir)
+
+        for _ in range(120):
+            try:
+                status = self.get_aria2_status(metadata_gid)
+            except Exception:
+                status = {}
+
+            followed_by = status.get("followedBy", [])
+
+            if followed_by:
+                real_gid = followed_by[0]
+                print("Metadata completed")
+                print("Real torrent GID:", real_gid)
+                return real_gid
+
+            active, waiting, stopped = self.get_active_waiting_stopped()
+            candidates = active + waiting + stopped
+
+            for item in candidates:
+                gid = item.get("gid")
+
+                if gid == metadata_gid:
+                    continue
+
+                belongs_to = item.get("belongsTo")
+                following = item.get("following")
+
+                if belongs_to == metadata_gid or following == metadata_gid:
+                    print("Real torrent GID:", gid)
+                    return gid
+
+                files = item.get("files", [])
+
+                for file_item in files:
+                    path = file_item.get("path", "")
+
+                    if path and str(path).startswith(save_dir):
+                        total = int(item.get("totalLength", "0") or 0)
+
+                        if total > 0:
+                            print("Real torrent GID:", gid)
+                            return gid
+
+            state = status.get("status")
+
+            if state == "error":
+                raise RuntimeError(status.get("errorMessage") or "Metadata failed.")
+
+            time.sleep(1)
+
+        print("Could not detect a separate real torrent GID")
+        print("Using original GID")
+        return metadata_gid
 
     def wait_for_torrent_metadata(self, gid):
         bar = tqdm(total=1, desc="Fetching metadata", unit="step")
@@ -338,10 +629,25 @@ class AzuDlGC2GD:
                 bar.close()
                 raise RuntimeError(status.get("errorMessage") or "Metadata fetch failed.")
 
+            followed_by = status.get("followedBy", [])
             files = status.get("files", [])
-            total = int(status.get("totalLength", "0"))
+            total = int(status.get("totalLength", "0") or 0)
+
+            if followed_by:
+                bar.update(1)
+                bar.close()
+                return
 
             if files and total > 0:
+                bittorrent = status.get("bittorrent", {})
+                info = bittorrent.get("info", {})
+
+                if info:
+                    bar.update(1)
+                    bar.close()
+                    return
+
+            if status.get("status") == "complete" and files and total > 0:
                 bar.update(1)
                 bar.close()
                 return
@@ -351,16 +657,29 @@ class AzuDlGC2GD:
     def monitor_aria2(self, gid, label):
         last_completed = 0
         progress = None
+        last_state = None
+        printed_file = None
 
         while True:
             status = self.get_aria2_status(gid)
 
             state = status.get("status")
-            total = int(status.get("totalLength", "0"))
-            completed = int(status.get("completedLength", "0"))
-            speed = int(status.get("downloadSpeed", "0"))
+            total = int(status.get("totalLength", "0") or 0)
+            completed = int(status.get("completedLength", "0") or 0)
+            speed = int(status.get("downloadSpeed", "0") or 0)
             seeders = status.get("numSeeders", "0")
             connections = status.get("connections", "0")
+            files = status.get("files", [])
+
+            if state != last_state:
+                print("Status:", state)
+                last_state = state
+
+            if files:
+                first_file = files[0].get("path", "")
+                if first_file and first_file != printed_file:
+                    print("File:", Path(first_file).name)
+                    printed_file = first_file
 
             if state == "error":
                 if progress:
@@ -377,17 +696,27 @@ class AzuDlGC2GD:
                 )
 
             if progress:
+                if completed < last_completed:
+                    last_completed = 0
+                    progress.n = 0
+
                 delta = completed - last_completed
 
                 if delta > 0:
                     progress.update(delta)
 
+                percent = 0
+
+                if total > 0:
+                    percent = completed * 100 / total
+
                 postfix = {
+                    "percent": f"{percent:.2f}%",
                     "speed": self.format_bytes(speed) + "/s",
                     "connections": connections
                 }
 
-                if seeders != "0":
+                if str(seeders) != "0":
                     postfix["seeders"] = seeders
 
                 progress.set_postfix(postfix)
@@ -419,16 +748,24 @@ class AzuDlGC2GD:
             "enable-peer-exchange": "true",
             "bt-enable-lpd": "true",
             "bt-save-metadata": "true",
-            "bt-load-saved-metadata": "true"
+            "bt-load-saved-metadata": "true",
+            "bt-request-peer-speed-limit": "50K"
         }
 
         gid = self.add_aria2_download([magnet], save_dir, speed_limit, options)
 
-        print("Torrent added")
+        print("Magnet added")
         print("Output:", save_dir)
+        print("Metadata GID:", gid)
 
         self.wait_for_torrent_metadata(gid)
-        self.monitor_aria2(gid, "Torrent")
+
+        real_gid = self.find_real_torrent_gid(gid, save_dir)
+
+        print("Starting torrent download monitor")
+        print("Download GID:", real_gid)
+
+        self.monitor_aria2(real_gid, "Torrent Download")
 
         self.save_history({
             "type": "torrent",
@@ -439,6 +776,61 @@ class AzuDlGC2GD:
 
         print("Download completed")
         print("Saved to:", save_dir)
+
+    def download_torrent_file(self, source, folder_name="", speed_limit=""):
+        source = source.strip()
+        folder_name = self.sanitize_name(folder_name)
+        save_dir = self.torrent_dir / folder_name
+        save_dir.mkdir(parents=True, exist_ok=True)
+
+        if source.startswith(("http://", "https://")):
+            print("Downloading torrent file metadata")
+            response = requests.get(source, timeout=60)
+            response.raise_for_status()
+            torrent_bytes = response.content
+        else:
+            path = Path(source)
+
+            if not path.exists():
+                raise FileNotFoundError(f"Torrent file not found: {path}")
+
+            torrent_bytes = path.read_bytes()
+
+        gid = self.add_aria2_torrent(torrent_bytes, save_dir, speed_limit)
+
+        print("Torrent file added")
+        print("Output:", save_dir)
+        print("Download GID:", gid)
+
+        self.monitor_aria2(gid, "Torrent File Download")
+
+        self.save_history({
+            "type": "torrent_file",
+            "source": source,
+            "output": str(save_dir),
+            "status": "completed"
+        })
+
+        print("Download completed")
+        print("Saved to:", save_dir)
+
+    def parse_headers_json(self, text):
+        text = str(text or "").strip()
+
+        if not text:
+            return None
+
+        try:
+            data = json.loads(text)
+        except Exception:
+            print("Invalid headers JSON, ignored")
+            return None
+
+        if not isinstance(data, dict):
+            print("Headers JSON must be an object, ignored")
+            return None
+
+        return data
 
     def download_direct(self, url, folder_name="", file_name="", speed_limit="", headers=None):
         url = url.strip()
@@ -457,9 +849,11 @@ class AzuDlGC2GD:
 
         if headers:
             header_lines = []
+
             for key, value in headers.items():
                 if key and value:
                     header_lines.append(f"{key}: {value}")
+
             if header_lines:
                 options["header"] = header_lines
 
@@ -561,7 +955,7 @@ class AzuDlGC2GD:
 
         return "bv*+ba/best"
 
-    def download_youtube(self, url, folder_name="", quality="best", audio_only=False, custom_format="", playlist=True):
+    def download_youtube(self, url, folder_name="", quality="best", audio_only=False, custom_format="", playlist=True, metadata=False):
         url = url.strip()
         folder_name = self.sanitize_name(folder_name)
         save_dir = self.youtube_dir / folder_name
@@ -637,7 +1031,9 @@ class AzuDlGC2GD:
             "progress_hooks": [hook],
             "postprocessors": postprocessors,
             "quiet": True,
-            "no_warnings": True
+            "no_warnings": True,
+            "writeinfojson": metadata,
+            "writethumbnail": metadata
         }
 
         print("YouTube download started")
@@ -672,6 +1068,10 @@ class AzuDlGC2GD:
             speed_limit = input("Speed limit optional, example 5M: ").strip()
             self.download_magnet(value, folder_name, speed_limit)
 
+        elif link_type == "torrent_file":
+            speed_limit = input("Speed limit optional, example 5M: ").strip()
+            self.download_torrent_file(value, folder_name, speed_limit)
+
         elif link_type == "youtube":
             show_formats = input("Show available formats? y/n: ").strip().lower()
 
@@ -689,6 +1089,8 @@ class AzuDlGC2GD:
             custom_format = input("Custom format ID optional: ").strip()
             playlist_answer = input("Download playlist if detected? y/n: ").strip().lower()
             playlist = playlist_answer != "n"
+            metadata_answer = input("Save YouTube metadata and thumbnail? y/n: ").strip().lower()
+            metadata = metadata_answer == "y"
 
             self.download_youtube(
                 url=value,
@@ -696,13 +1098,16 @@ class AzuDlGC2GD:
                 quality=quality,
                 audio_only=audio_only,
                 custom_format=custom_format,
-                playlist=playlist
+                playlist=playlist,
+                metadata=metadata
             )
 
         elif link_type == "direct":
             file_name = input("File name optional: ").strip()
             speed_limit = input("Speed limit optional, example 5M: ").strip()
-            self.download_direct(value, folder_name, file_name, speed_limit)
+            headers_text = input('Headers JSON optional, example {"User-Agent":"Mozilla/5.0"}: ').strip()
+            headers = self.parse_headers_json(headers_text)
+            self.download_direct(value, folder_name, file_name, speed_limit, headers)
 
     def batch_download(self):
         print("Enter links one by one")
@@ -739,6 +1144,9 @@ class AzuDlGC2GD:
                 if link_type == "torrent":
                     self.download_magnet(link, batch_folder, speed_limit)
 
+                elif link_type == "torrent_file":
+                    self.download_torrent_file(link, batch_folder, speed_limit)
+
                 elif link_type == "youtube":
                     self.download_youtube(
                         url=link,
@@ -746,7 +1154,8 @@ class AzuDlGC2GD:
                         quality="best",
                         audio_only=False,
                         custom_format="",
-                        playlist=True
+                        playlist=True,
+                        metadata=False
                     )
 
                 elif link_type == "direct":
@@ -765,6 +1174,169 @@ class AzuDlGC2GD:
                     "status": "failed",
                     "error": str(error)
                 })
+
+    def storage_report(self):
+        total, used, free = shutil.disk_usage(str(self.my_drive_path))
+
+        print("Google Drive mount storage")
+        print("-" * 80)
+        print("Total:", self.format_bytes(total))
+        print("Used:", self.format_bytes(used))
+        print("Free:", self.format_bytes(free))
+
+        print("")
+        print("Project folders")
+        print("-" * 80)
+
+        folders = [
+            self.torrent_dir,
+            self.youtube_dir,
+            self.direct_dir,
+            self.batch_dir,
+            self.archive_dir,
+            self.logs_dir
+        ]
+
+        for folder in folders:
+            print(self.format_bytes(self.folder_size(folder)), folder)
+
+    def folder_size(self, folder):
+        folder = Path(folder)
+
+        if not folder.exists():
+            return 0
+
+        total = 0
+
+        for item in folder.glob("**/*"):
+            if item.is_file():
+                try:
+                    total += item.stat().st_size
+                except Exception:
+                    pass
+
+        return total
+
+    def sha256_file(self, file_path):
+        file_path = Path(file_path)
+
+        if not file_path.exists():
+            raise FileNotFoundError(file_path)
+
+        if not file_path.is_file():
+            raise ValueError("Path is not a file")
+
+        h = hashlib.sha256()
+        total = file_path.stat().st_size
+
+        with file_path.open("rb") as f, tqdm(total=total, unit="B", unit_scale=True, unit_divisor=1024, desc="SHA256") as bar:
+            while True:
+                chunk = f.read(1024 * 1024)
+
+                if not chunk:
+                    break
+
+                h.update(chunk)
+                bar.update(len(chunk))
+
+        return h.hexdigest()
+
+    def hash_latest_file(self):
+        latest = self.get_latest_file()
+
+        if not latest:
+            print("No files found")
+            return
+
+        print("Latest file:", latest)
+        print("Size:", self.format_bytes(latest.stat().st_size))
+
+        digest = self.sha256_file(latest)
+
+        print("SHA256:")
+        print(digest)
+
+    def sha256_selected_file(self):
+        file_path = self.select_file()
+
+        if not file_path:
+            return
+
+        digest = self.sha256_file(file_path)
+
+        print("File:", file_path)
+        print("SHA256:", digest)
+
+    def zip_folder(self):
+        source = input("Folder path to zip: ").strip()
+
+        if not source:
+            print("No folder path entered")
+            return
+
+        source_path = Path(source)
+
+        if not source_path.exists():
+            print("Folder does not exist")
+            return
+
+        if not source_path.is_dir():
+            print("Path is not a folder")
+            return
+
+        output_name = input("Output zip name optional: ").strip()
+
+        if not output_name:
+            output_name = source_path.name + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+        output_name = self.sanitize_name(output_name)
+        output_base = self.archive_dir / output_name
+
+        print("Creating ZIP...")
+        result = shutil.make_archive(str(output_base), "zip", str(source_path))
+
+        print("ZIP created:")
+        print(result)
+
+        self.save_history({
+            "type": "zip",
+            "source": str(source_path),
+            "output": result,
+            "status": "completed"
+        })
+
+    def zip_latest_folder(self):
+        latest_folder = self.get_latest_downloaded_folder()
+
+        if not latest_folder:
+            print("No folders found")
+            return
+
+        print("Latest folder:")
+        print(latest_folder)
+
+        confirm = input("Zip this folder? y/n: ").strip().lower()
+
+        if confirm != "y":
+            print("Cancelled")
+            return
+
+        output_name = latest_folder.name + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_name = self.sanitize_name(output_name)
+        output_base = self.archive_dir / output_name
+
+        print("Creating ZIP...")
+        result = shutil.make_archive(str(output_base), "zip", str(latest_folder))
+
+        print("ZIP created:")
+        print(result)
+
+        self.save_history({
+            "type": "zip",
+            "source": str(latest_folder),
+            "output": result,
+            "status": "completed"
+        })
 
     def print_developer(self):
         text = """
@@ -809,18 +1381,31 @@ Azizi Universal Downloader - Google Colab to Google Drive
 Main options:
 1. Auto detect link
 2. Torrent magnet
-3. YouTube video or playlist
-4. Direct link
-5. Batch download
-6. Download history
-7. List downloaded files
-8. Developer
-9. Help
-10. Exit
+3. Torrent file
+4. YouTube video or playlist
+5. Direct link
+6. Batch download
+7. Download history
+8. List downloaded files
+9. Storage report
+10. SHA256 latest file
+11. SHA256 selected file
+12. ZIP folder
+13. ZIP latest folder
+14. aria2 status
+15. Remove aria2 GID
+16. Clear stopped aria2 results
+17. Latest file
+18. Developer
+19. Help
+20. Exit
 
 Auto detect:
 Paste any supported link.
-The app detects torrent magnet, YouTube URL, or direct URL automatically.
+The app detects magnet, torrent file, YouTube URL, or direct URL automatically.
+
+Torrent update:
+Magnet links show the real file download progress after metadata is fetched.
 
 Storage paths:
 Base:
@@ -838,11 +1423,17 @@ Direct files:
 Batch files:
 /content/drive/MyDrive/AzuDl-GC2GD/BatchDownloads
 
+Archives:
+/content/drive/MyDrive/AzuDl-GC2GD/Archives
+
 Logs:
 /content/drive/MyDrive/AzuDl-GC2GD/Logs
 
 Torrent magnet example:
 magnet:?xt=urn:btih:EXAMPLE_HASH
+
+Torrent file:
+Use a .torrent URL or a local .torrent path.
 
 YouTube quality values:
 best
@@ -870,6 +1461,11 @@ https://example.com/video.mp4
 https://example.com/archive.rar
 https://example.com/document.pdf
 
+Direct headers:
+You can pass optional headers as JSON.
+Example:
+{"User-Agent":"Mozilla/5.0","Referer":"https://example.com"}
+
 Speed limit examples:
 500K
 2M
@@ -885,13 +1481,6 @@ Leave empty to keep the original file name.
 Batch download:
 Paste multiple links.
 Empty line starts the batch process.
-
-Drive mount error fixes:
-Runtime > Restart session
-Use only one Google account
-Open Colab in Incognito mode
-Allow third-party cookies
-Run drive.flush_and_unmount before retrying
 
 Notes:
 Use only content you have the right to download.
@@ -918,14 +1507,24 @@ def main():
         print("=" * 70)
         print("1. Auto detect link")
         print("2. Torrent magnet")
-        print("3. YouTube video or playlist")
-        print("4. Direct link")
-        print("5. Batch download")
-        print("6. Download history")
-        print("7. List downloaded files")
-        print("8. Developer")
-        print("9. Help")
-        print("10. Exit")
+        print("3. Torrent file")
+        print("4. YouTube video or playlist")
+        print("5. Direct link")
+        print("6. Batch download")
+        print("7. Download history")
+        print("8. List downloaded files")
+        print("9. Storage report")
+        print("10. SHA256 latest file")
+        print("11. SHA256 selected file")
+        print("12. ZIP folder")
+        print("13. ZIP latest folder")
+        print("14. aria2 status")
+        print("15. Remove aria2 GID")
+        print("16. Clear stopped aria2 results")
+        print("17. Latest file")
+        print("18. Developer")
+        print("19. Help")
+        print("20. Exit")
 
         choice = input("Select option: ").strip()
 
@@ -941,6 +1540,12 @@ def main():
                 app.download_magnet(magnet, folder_name, speed_limit)
 
             elif choice == "3":
+                source = input("Torrent file URL or path: ").strip()
+                folder_name = input("Folder name optional: ").strip()
+                speed_limit = input("Speed limit optional, example 5M: ").strip()
+                app.download_torrent_file(source, folder_name, speed_limit)
+
+            elif choice == "4":
                 url = input("YouTube URL: ").strip()
                 folder_name = input("Folder name optional: ").strip()
                 show_formats = input("Show available formats? y/n: ").strip().lower()
@@ -959,6 +1564,8 @@ def main():
                 custom_format = input("Custom format ID optional: ").strip()
                 playlist_answer = input("Download playlist if detected? y/n: ").strip().lower()
                 playlist = playlist_answer != "n"
+                metadata_answer = input("Save metadata and thumbnail? y/n: ").strip().lower()
+                metadata = metadata_answer == "y"
 
                 app.download_youtube(
                     url=url,
@@ -966,32 +1573,62 @@ def main():
                     quality=quality,
                     audio_only=audio_only,
                     custom_format=custom_format,
-                    playlist=playlist
+                    playlist=playlist,
+                    metadata=metadata
                 )
 
-            elif choice == "4":
+            elif choice == "5":
                 url = input("Direct URL: ").strip()
                 folder_name = input("Folder name optional: ").strip()
                 file_name = input("File name optional: ").strip()
                 speed_limit = input("Speed limit optional, example 5M: ").strip()
-                app.download_direct(url, folder_name, file_name, speed_limit)
-
-            elif choice == "5":
-                app.batch_download()
+                headers_text = input('Headers JSON optional, example {"User-Agent":"Mozilla/5.0"}: ').strip()
+                headers = app.parse_headers_json(headers_text)
+                app.download_direct(url, folder_name, file_name, speed_limit, headers)
 
             elif choice == "6":
-                app.print_history()
+                app.batch_download()
 
             elif choice == "7":
-                app.list_downloads()
+                app.print_history()
 
             elif choice == "8":
-                app.print_developer()
+                app.list_downloads()
 
             elif choice == "9":
-                app.print_help()
+                app.storage_report()
 
             elif choice == "10":
+                app.hash_latest_file()
+
+            elif choice == "11":
+                app.sha256_selected_file()
+
+            elif choice == "12":
+                app.zip_folder()
+
+            elif choice == "13":
+                app.zip_latest_folder()
+
+            elif choice == "14":
+                app.print_aria2_status()
+
+            elif choice == "15":
+                app.remove_aria2_gid()
+
+            elif choice == "16":
+                app.purge_aria2_stopped()
+
+            elif choice == "17":
+                app.print_latest_file()
+
+            elif choice == "18":
+                app.print_developer()
+
+            elif choice == "19":
+                app.print_help()
+
+            elif choice == "20":
                 print("Exit")
                 break
 
